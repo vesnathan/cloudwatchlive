@@ -1,0 +1,19 @@
+{
+  "name": "cloudwatchlive",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "dev-mocks"
+  ],
+  "scripts": {
+    "dev": "yarn workspace cwlfrontend dev:local",
+    "build": "yarn workspace cwlfrontend build",
+    "lint": "yarn workspace cwlfrontend lint",
+    "tsc": "yarn workspace cwlfrontend tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4"
+  }
+}
