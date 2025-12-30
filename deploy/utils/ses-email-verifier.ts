@@ -37,7 +37,7 @@ export class SESEmailVerifier {
       }
 
       return attributes.VerificationStatus === "Success";
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Error checking email verification status: ${error.message}`,
       );
@@ -64,7 +64,7 @@ export class SESEmailVerifier {
       logger.info(
         `  Check your inbox (and spam folder) for an email from no-reply-aws@amazon.com`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error requesting email verification: ${error.message}`);
       if (error.code === "InvalidParameterValue") {
         logger.error(
@@ -107,7 +107,7 @@ export class SESEmailVerifier {
       }
 
       return verifiedEmails;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error listing verified emails: ${error.message}`);
       return [];
     }

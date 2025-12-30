@@ -112,7 +112,7 @@ export class AwsUtils {
     try {
       await client.send(new DescribeStacksCommand({ StackName: stackName }));
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.message && error.message.includes("does not exist")) {
         return false;
       }
@@ -181,7 +181,7 @@ export class AwsUtils {
             new CreateBucketCommand(createBucketParams),
           );
           logger.success(`Created templates bucket: ${bucketName}`);
-        } catch (bucketError: any) {
+        } catch (bucketError: unknown) {
           // If bucket already exists and we own it, that's fine
           if (bucketError.name === "BucketAlreadyOwnedByYou") {
             logger.debug(
@@ -202,7 +202,7 @@ export class AwsUtils {
         stackType,
         regionalS3Client,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to create or configure bucket: ${error?.message || "Unknown error"}`,
       );
@@ -214,7 +214,7 @@ export class AwsUtils {
     try {
       const templatePath = TEMPLATE_PATHS[stackType];
       return await fs.readFile(templatePath, "utf-8");
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to read template for ${stackType}: ${error?.message || "Unknown error"}`,
       );
@@ -248,7 +248,7 @@ export class AwsUtils {
         files = entries
           .filter((entry) => entry.isFile() && entry.name.endsWith(".yaml"))
           .map((entry) => path.join(basePath, entry.name));
-      } catch (readdirError: any) {
+      } catch (readdirError: unknown) {
         // Directory might not exist or be accessible, that's fine
         logger.debug(
           `Could not read directory ${basePath}: ${readdirError.message}`,
@@ -280,7 +280,7 @@ export class AwsUtils {
       }
 
       logger.success(`Templates bucket setup complete for ${stackType} stack`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Error in uploadTemplates: ${error.message}`);
       logger.success(
         `Templates bucket setup complete for ${stackType} stack (no additional files)`,
@@ -315,7 +315,7 @@ export class AwsUtils {
           logger.error(`Reason: ${event.ResourceStatusReason}`);
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to get stack failure details: ${error?.message || "Unknown error"}`,
       );
@@ -336,7 +336,7 @@ export class AwsUtils {
 
     try {
       return await operation(wafCfClient);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to perform WAF stack operation in ${wafRegion}: ${error?.message || "Unknown error"}`,
       );
@@ -387,7 +387,7 @@ export class AwsUtils {
 
         // Unexpected status
         throw new Error(`Unexpected stack status: ${currentStatus}`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message?.includes("does not exist")) {
           throw new Error(`Stack ${stackName} not found during wait operation`);
         }
@@ -442,7 +442,7 @@ export class AwsUtils {
         // Show elapsed time in spinner message (optional: can be added to spinner if desired)
         // Wait before checking again
         await sleep(10000); // Poll every 10 seconds for deletion
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.message?.includes("does not exist")) {
           stopSpinner();
           logger.success(`Stack ${stackName} has been deleted successfully`);
@@ -493,7 +493,7 @@ export class AwsUtils {
       if (events[0]) {
         this.lastEventId = events[0].EventId;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to get stack events: ${error?.message || "Unknown error"}`,
       );

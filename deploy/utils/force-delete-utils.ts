@@ -132,7 +132,7 @@ export class ForceDeleteManager {
       logger.info(
         `Attempting to empty S3 bucket ${bucketName} (versioning aware)...`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (
         error.name === "NoSuchBucket" ||
         error.name === "NotFound" ||
@@ -152,6 +152,7 @@ export class ForceDeleteManager {
     try {
       let KeyMarker: string | undefined;
       let VersionIdMarker: string | undefined;
+      let isTruncated = false;
       do {
         const listVersionsResponse = await this.s3Client.send(
           new ListObjectVersionsCommand({
@@ -202,7 +203,8 @@ export class ForceDeleteManager {
         }
         KeyMarker = listVersionsResponse.NextKeyMarker;
         VersionIdMarker = listVersionsResponse.NextVersionIdMarker;
-      } while (KeyMarker || VersionIdMarker);
+        isTruncated = listVersionsResponse.IsTruncated || false;
+      } while (isTruncated);
       logger.info(
         `Successfully emptied S3 bucket ${bucketName} (all versions and delete markers).`,
       );
@@ -233,7 +235,7 @@ export class ForceDeleteManager {
         );
         logger.info(`Successfully deleted S3 bucket ${bucketName}.`);
         return;
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If bucket not found, consider it deleted
         if (
           error.name === "NoSuchBucket" ||
@@ -282,12 +284,12 @@ export class ForceDeleteManager {
                 `Deleted ${ids.length} non-versioned objects from ${bucketName} as fallback.`,
               );
             }
-          } catch (nonverr: any) {
+          } catch (nonverr: unknown) {
             logger.debug(
               `Non-versioned fallback delete failed for ${bucketName}: ${nonverr.message || String(nonverr)}`,
             );
           }
-        } catch (emptyErr: any) {
+        } catch (emptyErr: unknown) {
           logger.warning(
             `Failed to empty bucket ${bucketName} during delete retry: ${emptyErr.message || String(emptyErr)}`,
           );
@@ -405,7 +407,7 @@ export class ForceDeleteManager {
           `CloudFormation DeleteStack response metadata: ${JSON.stringify(deleteResponse.$metadata)}`,
         );
         logger.info(`Delete command sent successfully for stack ${stackName}`);
-      } catch (deleteError: any) {
+      } catch (deleteError: unknown) {
         logger.error(`Error sending delete command for stack ${stackName}:`);
         logger.error(`  Error name: ${deleteError.name}`);
         logger.error(`  Error message: ${deleteError.message}`);
@@ -439,7 +441,7 @@ export class ForceDeleteManager {
       // After stack deletion, also delete the conventionally named buckets
       logger.info(`Deleting conventionally named buckets for ${stackName}...`);
       await this.deleteConventionalBuckets(stackIdentifier, stackType, stage);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Failed to delete stack ${stackName}:`);
       logger.error(`  Error name: ${error.name}`);
       logger.error(`  Error message: ${error.message}`);
@@ -500,7 +502,7 @@ export class ForceDeleteManager {
     try {
       const stack = await this.getStack(stackName);
       return stack?.StackStatus || null;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // If stack doesn't exist, return null
       if (
         error.name === "ValidationError" ||
@@ -556,7 +558,7 @@ export class ForceDeleteManager {
         logger.info(
           `Waiting for stack ${stackName} to delete... Current status: ${status || "UNKNOWN"} (Attempt ${i + 1}/${maxAttempts})`,
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If it's a getStack error and the stack doesn't exist, that's success
         if (
           error.name === "ValidationError" &&

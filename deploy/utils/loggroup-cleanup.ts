@@ -71,7 +71,7 @@ export async function cleanupLogGroups(
       try {
         await client.send(new DeleteLogGroupCommand({ logGroupName }));
         logger.info(`  ✓ Deleted ${logGroupName}`);
-      } catch (err: any) {
+      } catch (err: unknown) {
         if (err.name === "ResourceNotFoundException") {
           logger.info(`  ⊘ Already deleted: ${logGroupName}`);
         } else {
@@ -84,7 +84,7 @@ export async function cleanupLogGroups(
     }
 
     logger.success("✓ LogGroup cleanup completed");
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Don't fail deployment if cleanup fails
     logger.warning(`⚠ LogGroup cleanup failed: ${error.message}`);
     logger.warning("  Continuing with deployment...");

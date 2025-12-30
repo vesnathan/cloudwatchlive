@@ -72,15 +72,9 @@ export class DeploymentManager {
 
     // Set up logging for force delete operations
     const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
-    const stackTypeStr =
-      getProjectConfig(stackType).packageDir || stackType.toLowerCase();
     const logFilePath = path.join(
       __dirname,
-      "../..",
-      ".cache",
-      "deploy",
-      stackTypeStr,
-      "logs",
+      "../.cache/deploy/logs",
       `force-delete-${timestamp}.log`,
     );
     setLogFile(logFilePath);
@@ -144,7 +138,7 @@ export class DeploymentManager {
         } else {
           logger.info(`DNS stack ${dnsStackName} does not exist in us-east-1.`);
         }
-      } catch (dnsError: any) {
+      } catch (dnsError: unknown) {
         logger.warning(
           `Failed to delete DNS stack: ${dnsError.message}. Continuing with main stack deletion.`,
         );
@@ -192,7 +186,7 @@ export class DeploymentManager {
             stackType,
             stage,
           );
-        } catch (bucketErr: any) {
+        } catch (bucketErr: unknown) {
           logger.warning(
             `Final conventional bucket deletion for ${stackName} failed (continuing): ${bucketErr.message || bucketErr}`,
           );
@@ -214,7 +208,7 @@ export class DeploymentManager {
             stackType,
             stage,
           );
-        } catch (bucketErr: any) {
+        } catch (bucketErr: unknown) {
           logger.warning(
             `Conventional bucket deletion for orphaned stack ${stackName} failed: ${bucketErr.message || bucketErr}`,
           );

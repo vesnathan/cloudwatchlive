@@ -1,4 +1,4 @@
-import { S3 } from "@aws-sdk/client-s3";
+import { S3, CreateBucketCommandInput } from "@aws-sdk/client-s3";
 import { logger } from "./logger";
 
 /**
@@ -15,9 +15,11 @@ export async function ensureBucketExists(
     await s3.headBucket({ Bucket: bucketName });
     logger.debug(`Bucket ${bucketName} already exists`);
     return true;
-  } catch (error: any) {
-    if (error.name !== "NotFound" && error.name !== "NoSuchBucket") {
-      logger.error(`Error checking bucket: ${error.message}`);
+  } catch (error: unknown) {
+    const errorName = error instanceof Error ? (error as { name?: string }).name : undefined;
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    if (errorName !== "NotFound" && errorName !== "NoSuchBucket") {
+      logger.error(`Error checking bucket: ${errorMessage}`);
       throw error;
     }
 
@@ -25,7 +27,7 @@ export async function ensureBucketExists(
 
     try {
       // Create bucket with or without location constraint based on region
-      const createBucketParams: any = { Bucket: bucketName };
+      const createBucketParams: CreateBucketCommandInput = { Bucket: bucketName };
 
       // Only specify LocationConstraint if not in us-east-1 (which is the default)
       if (region !== "us-east-1") {
@@ -59,7 +61,7 @@ export async function ensureBucketExists(
       }
 
       return true;
-    } catch (createError: any) {
+    } catch (createError: unknown) {
       logger.error(
         `Failed to create bucket ${bucketName}: ${createError.message}`,
       );

@@ -78,7 +78,7 @@ async function retryOperation<T>(
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       return await operation();
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (attempt === maxRetries) throw error;
       logger.warning(
         `Operation failed (attempt ${attempt}/${maxRetries}): ${error.message}`,
@@ -103,7 +103,7 @@ function findTypeScriptFiles(dir: string): string[] {
         files.push(fullPath);
       }
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.warning(`Error reading directory ${dir}: ${error.message}`);
   }
   return files;
@@ -158,7 +158,7 @@ async function handleStuckStackResources(stackName: string): Promise<void> {
 
     // Wait a bit for AWS to process the manual cleanup
     await new Promise((resolve) => setTimeout(resolve, 15000));
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.warning(`Manual resource cleanup failed: ${error.message}`);
   }
 }
@@ -208,7 +208,7 @@ async function cleanupIAMRole(roleArn: string): Promise<void> {
     logger.debug(`Deleting IAM role: ${roleName}`);
     await iam.send(new DeleteRoleCommand({ RoleName: roleName }));
     logger.success(`Successfully deleted IAM role: ${roleName}`);
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.warning(`Failed to cleanup IAM role ${roleArn}: ${error.message}`);
   }
 }
@@ -237,7 +237,7 @@ async function cleanupNestedStack(stackArn: string): Promise<void> {
       // Wait for deletion to complete
       await waitForStackDeletion(cfn, fullStackName);
       logger.success(`Successfully cleaned up nested stack: ${fullStackName}`);
-    } catch (deleteError: any) {
+    } catch (deleteError: unknown) {
       logger.warning(
         `Direct deletion failed for ${fullStackName}: ${deleteError.message}`,
       );
@@ -251,7 +251,7 @@ async function cleanupNestedStack(stackArn: string): Promise<void> {
       );
       logger.success(`Force deleted nested stack: ${fullStackName}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.warning(
       `Failed to cleanup nested stack ${stackArn}: ${error.message}`,
     );
@@ -317,7 +317,7 @@ async function waitForStackDeletion(
         lastMsg = msg;
       }
       await new Promise((resolve) => setTimeout(resolve, delay));
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (
         error.name === "ValidationError" &&
         error.message.includes("does not exist")
@@ -417,7 +417,7 @@ async function waitForStackCompletion(
       }
 
       await new Promise((resolve) => setTimeout(resolve, delay));
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (i === maxAttempts - 1) {
         throw error;
       }
@@ -468,7 +468,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
       logger.debug(`Stack ${stackName} exists with status: ${status}`);
       logger.debug(`Stack is healthy for frontend build: ${stackIsHealthy}`);
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     if (
       error.name === "ValidationError" ||
       error.message?.includes("does not exist")
@@ -527,7 +527,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
         "   Frontend will be built and deployed after backend is ready",
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Build failed: ${error.message}`);
     if (error.stdout) logger.error(`Output: ${error.stdout}`);
     if (error.stderr) logger.error(`Error output: ${error.stderr}`);
@@ -621,7 +621,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
       if (options.debugMode) {
         logger.debug(`Enabled versioning on bucket ${templateBucketName}`);
       }
-    } catch (configError: any) {
+    } catch (configError: unknown) {
       logger.warning(`Error configuring bucket: ${configError.message}`);
       // Continue despite configuration errors
     }
@@ -649,7 +649,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
         }),
       );
       logger.debug("Main template uploaded successfully.");
-    } catch (error: any) {
+    } catch (error: unknown) {
       throw new Error(`Failed to upload main template: ${error.message}`);
     }
 
@@ -683,7 +683,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
           logger.debug("Deleted existing templates");
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(`Error clearing templates: ${error.message}`);
       if (options.debugMode) {
         logger.debug(
@@ -740,7 +740,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
           }
           successfulUploads.push(key);
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Failed to upload template ${key}: ${error.message}`);
         failedUploads.push(key);
       }
@@ -785,7 +785,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
           await s3.send(schemaUploadCommand);
           logger.debug("GraphQL schema uploaded successfully");
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Failed to upload GraphQL schema: ${error.message}`);
         throw new Error(
           "GraphQL schema upload failed - deployment cannot continue",
@@ -819,11 +819,11 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
 
     const lambdaSourceDir = path.join(
       __dirname,
-      "../../../cloudwatchlive/backend/lambda",
+      "../backend/lambda",
     );
     const lambdaOutputDir = path.join(
       __dirname,
-      "../../templates/cwl/functions",
+      "../.cache/deploy/functions",
     );
 
     logger.info(`Looking for Lambda functions in: ${lambdaSourceDir}`);
@@ -840,12 +840,13 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
         stage: options.stage,
         region: region,
         debugMode: options.debugMode,
+        appName: "cwl",
       });
 
       try {
         await lambdaCompiler.compileLambdaFunctions();
         logger.success("✓ Lambda functions compiled and uploaded successfully");
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Lambda compilation failed: ${error.message}`);
         throw error;
       }
@@ -874,7 +875,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
     try {
       await addAppSyncBucketPolicy(templateBucketName, region);
       logger.success("AppSync bucket policy configured successfully");
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Failed to add AppSync bucket policy: ${error.message}`);
       throw new Error(
         `AppSync bucket policy configuration failed - deployment cannot continue`,
@@ -990,7 +991,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
                 await sleep(5000); // Wait 5 seconds before retrying
                 retryCount++;
               }
-            } catch (error: any) {
+            } catch (error: unknown) {
               logger.error(
                 `Error verifying resolver uploads (attempt ${retryCount + 1}/${maxRetries}): ${error.message}`,
               );
@@ -1032,7 +1033,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
               "No resolvers were uploaded to S3. Deployment will fail.",
             );
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(
             `Resolver compilation and upload failed: ${error.message}`,
           );
@@ -1127,7 +1128,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
         stackExists = !!(
           describeResponse.Stacks && describeResponse.Stacks.length > 0
         );
-      } catch (describeError: any) {
+      } catch (describeError: unknown) {
         // Stack doesn't exist if we get an error
         if (
           describeError.name === "ValidationError" ||
@@ -1215,7 +1216,7 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
             staffPerAdmin: 5,
           });
           logger.success("✓ User table seeded successfully");
-        } catch (seedError: any) {
+        } catch (seedError: unknown) {
           // Log seeding errors but do not fail the overall deployment. Seeding is best-effort.
           logger.error(
             `User seeding failed (non-fatal): ${seedError instanceof Error ? seedError.message : seedError}`,
@@ -1235,11 +1236,11 @@ export async function deployCwl(options: DeploymentOptions): Promise<void> {
         );
         // Do not re-throw to avoid failing the main deployment for best-effort post-deploy tasks
       }
-    } catch (cfnError: any) {
+    } catch (cfnError: unknown) {
       logger.error(`CloudFormation deployment failed: ${cfnError.message}`);
       throw cfnError;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Deployment failed: ${error.message}`);
     throw error;
   } finally {

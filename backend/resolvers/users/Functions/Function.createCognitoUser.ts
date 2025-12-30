@@ -3,9 +3,19 @@
  * This function invokes the Lambda to create a Cognito user before storing in DynamoDB.
  */
 
-import { util } from "@aws-appsync/utils";
+import { util, Context } from "@aws-appsync/utils";
 
-export function request(ctx: any) {
+interface CreateCognitoUserInput {
+  userEmail: string;
+  userFirstName: string;
+  userLastName: string;
+  userPhone?: string;
+  userRole: string;
+  organizationId: string;
+  sendWelcomeEmail?: boolean;
+}
+
+export function request(ctx: Context<{ input: CreateCognitoUserInput }>) {
   const { input } = ctx.args;
 
   return {
@@ -22,7 +32,7 @@ export function request(ctx: any) {
   };
 }
 
-export function response(ctx: any) {
+export function response(ctx: Context) {
   if (ctx.error) {
     console.error("Error creating Cognito user:", ctx.error);
     // Return error to stop pipeline execution

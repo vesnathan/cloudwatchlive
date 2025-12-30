@@ -900,11 +900,19 @@ function createOrganization(
   };
 }
 
+interface SeedUserData {
+  email: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
 // Create a CWL user object
 function createCWLUser(
   superAdminUserId: string,
   organizationId: string,
-  userData: any,
+  userData: SeedUserData,
   userType: "EventCompanyMainAdmin" | "EventCompanyAdmin" | "EventCompanyStaff",
   managedAdminIds?: string[],
   managedStaffIds?: string[],

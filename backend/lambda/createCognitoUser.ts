@@ -122,7 +122,7 @@ export const handler = async (
       username: createUserResponse.User.Username,
       userCreated: new Date().toISOString(),
     };
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error creating Cognito user:", error);
 
     // Provide more helpful error messages

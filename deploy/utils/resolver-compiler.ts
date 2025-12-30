@@ -74,23 +74,10 @@ class ResolverCompiler {
 
     // buildDir is a temporary directory for the entire compilation process of this instance.
     // It will be created by setupBuildDirectory and cleaned up at start of each deploy.
-    // Use .cache directory inside monorepo to keep build artifacts
-    // __dirname is /packages/deploy/utils, so go up 3 levels to get to monorepo root
-    const monorepoRoot = path.join(__dirname, "..", "..", "..");
-    const parts = this.baseResolverDir.split(path.sep);
-    const pkgIndex = parts.indexOf("packages");
-    const appName =
-      pkgIndex >= 0 && pkgIndex + 1 < parts.length
-        ? parts[pkgIndex + 1]
-        : "unknown";
-    // Use consistent resolvers directory (no timestamp) so it gets cleaned each deploy
-    this.buildDir = path.join(
-      monorepoRoot,
-      ".cache",
-      "deploy",
-      appName,
-      "resolvers",
-    );
+    // Standalone structure: /home/.../cloudwatchlive/backend/resolvers
+    // __dirname is /home/.../cloudwatchlive/deploy/utils, go up 2 levels to project root
+    // Use .cache/deploy/resolvers directory for consistent build output
+    this.buildDir = path.join(__dirname, "..", "..", ".cache/deploy/resolvers");
   }
 
   private getAppName(): string {
@@ -255,7 +242,7 @@ class ResolverCompiler {
         logger.debug(
           `Yarn install output for ${this.sharedFileName}:\\n${yarnInstallOutput}`,
         );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Yarn install failed for ${this.sharedFileName} in ${tempCompileDir}: ${(error as Error).message}`,
       );
@@ -308,7 +295,7 @@ class ResolverCompiler {
       logger.success(`TSC compilation completed for ${this.sharedFileName}.`); // Essential log
       if (tscOutput)
         logger.debug(`TSC Output for ${this.sharedFileName}:\\n${tscOutput}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Error compiling ${this.sharedFileName}: ${(error as Error).message}`,
       );
@@ -477,7 +464,7 @@ class ResolverCompiler {
       logger.success(
         `Cleaned up ${deploymentsToDelete.length} old resolver deployment(s) from S3`,
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Failed to cleanup old S3 resolvers (continuing): ${error.message}`,
       );
@@ -579,7 +566,7 @@ class ResolverCompiler {
 
         logger.debug("Previous deployment cache cleaned (logs preserved)");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Failed to clean deployment cache (continuing): ${error.message}`,
       );
@@ -636,7 +623,7 @@ class ResolverCompiler {
         compiledFilesRelative.push(
           resolverFileRelativePath.replace(".ts", ".js"),
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         const errorMsg = `Failed to compile or upload resolver ${resolverFileRelativePath}: ${error.message}`;
         logger.error(errorMsg);
         if (error.stack) {
@@ -662,7 +649,7 @@ class ResolverCompiler {
         try {
           const buf = await fsPromises.readFile(localFile, "utf-8");
           contents.push(buf);
-        } catch (err: any) {
+        } catch (err: unknown) {
           logger.error(
             `Failed to read compiled file for hashing: ${localFile} - ${err.message}`,
           );
@@ -673,7 +660,7 @@ class ResolverCompiler {
       for (const c of contents) hasher.update(c);
       buildHash = hasher.digest("hex").slice(0, 16);
       logger.success(`Computed resolvers build hash: ${buildHash}`);
-    } catch (err: any) {
+    } catch (err: unknown) {
       logger.error(`Error computing build hash: ${err.message}`);
       throw err;
     }
@@ -694,7 +681,7 @@ class ResolverCompiler {
         logger.success(
           `✓ Uploaded hashed resolver ${relPath} to s3://${this.s3BucketName}/${s3KeyHashed}`,
         );
-      } catch (err: any) {
+      } catch (err: unknown) {
         logger.error(
           `Failed to upload hashed resolver ${relPath}: ${err.message}`,
         );
@@ -792,7 +779,7 @@ class ResolverCompiler {
           `Yarn install output for shared build directory:\n${yarnOutput}`,
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Yarn install failed in shared build directory ${this.buildDir}: ${error.message}`,
       );
@@ -852,7 +839,7 @@ class ResolverCompiler {
           `Source package.json not found at: ${sourcePackageJsonPath}. Will use default dependencies for temp build.`,
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Error reading source package.json at ${sourcePackageJsonPath}: ${error.message}. Proceeding with default dependencies.`,
       );
@@ -1076,12 +1063,93 @@ class ResolverCompiler {
 
     // Add global declarations for AppSync runtime
     const appsyncGlobals = `// AppSync runtime globals (provided by AppSync, declared for TypeScript)
-declare const util: any;
-type Context<TArguments = any, TSource = any, TStash = any, TResult = any, TReturns = any> = any;
-type AppSyncIdentityCognito = any;
-type AppSyncIdentityIAM = any;
-type AppSyncIdentityOIDC = any;
-type AppSyncIdentityLambda = any;
+interface AppSyncUtil {
+  autoId(): string;
+  autoKsuid(): string;
+  autoUlid(): string;
+  error(message: string, errorType?: string, data?: unknown, errorInfo?: unknown): never;
+  appendError(message: string, errorType?: string, data?: unknown, errorInfo?: unknown): void;
+  validate(condition: boolean, message: string, errorType?: string): void;
+  isNull(value: unknown): boolean;
+  isNullOrEmpty(value: unknown): boolean;
+  isNullOrBlank(value: unknown): boolean;
+  defaultIfNull<T>(value: T | null | undefined, defaultValue: T): T;
+  defaultIfNullOrEmpty<T>(value: T | null | undefined, defaultValue: T): T;
+  defaultIfNullOrBlank<T>(value: T | null | undefined, defaultValue: T): T;
+  matches(pattern: string, value: string): boolean;
+  authType(): string;
+  time: {
+    nowISO8601(): string;
+    nowEpochSeconds(): number;
+    nowEpochMilliSeconds(): number;
+    nowFormatted(format: string, timezone?: string): string;
+    parseFormattedToEpochMilliSeconds(dateTime: string, format: string, timezone?: string): number;
+    parseISO8601ToEpochMilliSeconds(dateTime: string): number;
+    epochMilliSecondsToSeconds(epochMillis: number): number;
+    epochMilliSecondsToISO8601(epochMillis: number): string;
+    epochMilliSecondsToFormatted(epochMillis: number, format: string, timezone?: string): string;
+  };
+  dynamodb: {
+    toDynamoDB(value: unknown): Record<string, unknown>;
+    toMapValues(values: Record<string, unknown>): Record<string, unknown>;
+    toMapValuesJson(values: string): Record<string, unknown>;
+    toS3ObjectJson(s3Object: { bucket: string; key: string; region?: string; version?: string }): string;
+    fromS3ObjectJson(s3ObjectJson: string): { bucket: string; key: string; region?: string; version?: string };
+  };
+  str: {
+    toUpper(value: string): string;
+    toLower(value: string): string;
+    toReplace(value: string, search: string, replacement: string): string;
+    normalize(value: string, form: string): string;
+  };
+  math: {
+    roundNum(value: number): number;
+    minVal(values: number[]): number;
+    maxVal(values: number[]): number;
+    randomDouble(): number;
+    randomWithinRange(min: number, max: number): number;
+  };
+  transform: {
+    toDynamoDBConditionExpression(condition: Record<string, unknown>): { expression: string; expressionNames: Record<string, string>; expressionValues: Record<string, unknown> };
+    toDynamoDBFilterExpression(filter: Record<string, unknown>): { expression: string; expressionNames: Record<string, string>; expressionValues: Record<string, unknown> };
+  };
+}
+declare const util: AppSyncUtil;
+interface AppSyncRuntime {
+  earlyReturn<T>(result: T): T;
+}
+declare const runtime: AppSyncRuntime;
+interface AppSyncIdentity {
+  sub?: string;
+  issuer?: string;
+  username?: string;
+  claims?: Record<string, unknown>;
+  sourceIp?: string[];
+  defaultAuthStrategy?: string;
+  groups?: string[] | null;
+  accountId?: string;
+  cognitoIdentityPoolId?: string;
+  cognitoIdentityId?: string;
+  userArn?: string;
+  cognitoIdentityAuthType?: string;
+  cognitoIdentityAuthProvider?: string;
+}
+interface Context<TArguments = Record<string, unknown>, TSource = Record<string, unknown> | null, TStash = Record<string, unknown>, TResult = unknown> {
+  arguments: TArguments;
+  args: TArguments;
+  source: TSource;
+  stash: TStash;
+  result: TResult;
+  prev: { result: TResult };
+  identity?: AppSyncIdentity | null;
+  request: { headers: Record<string, string>; domainName?: string };
+  info: { fieldName: string; parentTypeName: string; variables: Record<string, unknown>; selectionSetList: string[]; selectionSetGraphQL: string };
+  error?: { message: string; type: string };
+}
+type AppSyncIdentityCognito = AppSyncIdentity;
+type AppSyncIdentityIAM = AppSyncIdentity;
+type AppSyncIdentityOIDC = AppSyncIdentity;
+type AppSyncIdentityLambda = AppSyncIdentity;
 
 `;
     codeToCompile = appsyncGlobals + codeToCompile;
@@ -1245,7 +1313,7 @@ type AppSyncIdentityLambda = any;
 
       logger.debug(`Successfully read compiled JS for ${resolverFileName}`);
       return jsContentWithHeader;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `TypeScript compilation failed for ${resolverAbsolutePath}: ${error.message}`,
       );
@@ -1268,7 +1336,7 @@ type AppSyncIdentityLambda = any;
               encoding: "utf8",
             }).toString(),
           );
-        } catch (lsError: any) {
+        } catch (lsError: unknown) {
           logger.error(
             `Could not list contents of ${this.buildDir}: ${lsError.message}`,
           );
@@ -1278,7 +1346,7 @@ type AppSyncIdentityLambda = any;
     } finally {
       try {
         await fsPromises.rm(tempResolverPath, { recursive: true, force: true });
-      } catch (cleanupError: any) {
+      } catch (cleanupError: unknown) {
         logger.warning(
           `Failed to clean up temp resolver file ${tempResolverPath}: ${cleanupError.message}`,
         );
@@ -1316,7 +1384,7 @@ type AppSyncIdentityLambda = any;
     }
     try {
       await fsPromises.rm(this.buildDir, { recursive: true, force: true });
-    } catch (error: any) {
+    } catch (error: unknown) {
       this.logger.error(
         `Failed to remove main build directory ${this.buildDir}: ${error.message}`,
       );
