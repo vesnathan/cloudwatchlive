@@ -4,7 +4,20 @@
  * the Lambda function to send a welcome email to newly created users.
  */
 
-export function request(ctx: any) {
+import { Context } from "@aws-appsync/utils";
+
+interface UserResult {
+  userEmail: string;
+  userFirstName: string;
+  userLastName: string;
+  userId: string;
+}
+
+interface SendWelcomeEmailStash {
+  sendWelcomeEmail?: boolean;
+}
+
+export function request(ctx: Context<Record<string, unknown>, unknown, SendWelcomeEmailStash, UserResult>) {
   // Check if sendWelcomeEmail flag is set in stash
   const sendWelcomeEmail = ctx.stash.sendWelcomeEmail;
 
@@ -27,7 +40,7 @@ export function request(ctx: any) {
   };
 }
 
-export function response(ctx: any) {
+export function response(ctx: Context<Record<string, unknown>, unknown, SendWelcomeEmailStash, UserResult>) {
   if (ctx.error) {
     console.error("Error sending welcome email:", ctx.error);
     // Don't fail the whole mutation if email fails

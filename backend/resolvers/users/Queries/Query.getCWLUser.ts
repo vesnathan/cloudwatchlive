@@ -1,21 +1,42 @@
 import { util, AppSyncIdentityCognito, Context } from "@aws-appsync/utils";
-// 'gqlTypes' is a module alias mapped in tsconfig.json to ../frontend/src/types/gqlTypes.ts
-// This allows the resolver compiler to resolve GraphQL generated types during build
+// Import types from shared folder
 import { CWLUser, ClientType, GetCWLUserQueryVariables } from "gqlTypes";
-// Import ClientTypes constants from the single source of truth
+// Import ClientTypes constants from shared
 import {
   CWL_CLIENT_TYPES,
   isValidCWLClientType,
-} from "../../../constants/ClientTypes";
+} from "@shared/constants/ClientTypes";
 
 // Use GetCWLUserQueryVariables from shared frontend-generated types
 
 // Define Output type for the resolver - it's CWLUser as per schema for a successful response
 type Output = CWLUser;
 
+// Define the DynamoDB result structure for GetItem
+// This can be either { Item: UserData } or just UserData depending on AppSync runtime
+interface DynamoDBUserData {
+  userId: string;
+  organizationId?: string;
+  userEmail?: string;
+  userTitle?: string;
+  userFirstName?: string;
+  userLastName?: string;
+  userPhone?: string;
+  userRole?: string;
+  privacyPolicy?: boolean;
+  termsAndConditions?: boolean;
+  userAddedById?: string;
+  userCreated?: string;
+  userProfilePicture?: { Bucket: string; Key: string };
+}
+
+interface DynamoDBGetItemResult extends DynamoDBUserData {
+  Item?: DynamoDBUserData;
+}
+
 // Define CTX for the response function context
 // Args, Result, PrevResult, Source, Info
-type CTX = Context<GetCWLUserQueryVariables, object, object, object, Output>;
+type CTX = Context<GetCWLUserQueryVariables, object, object, object, DynamoDBGetItemResult | null>;
 
 export function request(ctx: Context<GetCWLUserQueryVariables>) {
   // It's good practice to cast args to the specific type
@@ -70,7 +91,9 @@ export function response(ctx: CTX): Output {
 
   // Extract the returned item from ctx.result. For GetItem, AWS may return
   // { Item: { ... } } or the raw item, depending on runtime.
-  const item = (ctx.result && ((ctx.result as any).Item || ctx.result)) as any;
+  const item: DynamoDBUserData | undefined = ctx.result
+    ? (ctx.result.Item || ctx.result)
+    : undefined;
 
   if (!item) {
     console.error(`User not found in DynamoDB for userId: ${userId}`);

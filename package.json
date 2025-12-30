@@ -5,13 +5,20 @@
   "workspaces": [
     "frontend",
     "backend",
+    "deploy",
     "dev-mocks"
   ],
   "scripts": {
     "dev": "yarn workspace cwlfrontend dev:local",
     "build": "yarn workspace cwlfrontend build",
     "lint": "yarn workspace cwlfrontend lint",
-    "tsc": "yarn workspace cwlfrontend tsc --noEmit"
+    "tsc": "yarn workspace cwlfrontend tsc --noEmit",
+    "deploy": "yarn workspace @cloudwatchlive/deploy deploy",
+    "deploy:dev": "yarn workspace @cloudwatchlive/deploy deploy:dev",
+    "deploy:prod": "yarn workspace @cloudwatchlive/deploy deploy:prod",
+    "remove-stacks": "yarn workspace @cloudwatchlive/deploy remove-stacks",
+    "remove-stacks:dev": "yarn workspace @cloudwatchlive/deploy remove-stacks:dev",
+    "remove-stacks:prod": "yarn workspace @cloudwatchlive/deploy remove-stacks:prod"
   },
   "devDependencies": {
     "typescript": "^5.5.4"

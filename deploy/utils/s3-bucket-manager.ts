@@ -2,6 +2,7 @@ import {
   S3,
   HeadBucketCommand,
   CreateBucketCommand,
+  CreateBucketCommandInput,
   GetBucketLocationCommand,
   ListObjectsV2Command,
   PutBucketVersioningCommand,
@@ -56,7 +57,7 @@ export class S3BucketManager {
 
         // Bucket exists and is in the correct region
         return true;
-      } catch (error: any) {
+      } catch (error: unknown) {
         if (error.name === "NotFound" || error.name === "NoSuchBucket") {
           logger.info(`Bucket ${bucketName} does not exist, will create it`);
         } else {
@@ -69,7 +70,7 @@ export class S3BucketManager {
       logger.info(`Creating bucket ${bucketName} in region ${this.region}...`);
 
       try {
-        const createBucketParams: any = {
+        const createBucketParams: CreateBucketCommandInput = {
           Bucket: bucketName,
           ObjectOwnership: "BucketOwnerEnforced", // Enable S3 Object Ownership
         };
@@ -97,7 +98,7 @@ export class S3BucketManager {
           `Successfully created and configured bucket ${bucketName}`,
         );
         return true;
-      } catch (createError: any) {
+      } catch (createError: unknown) {
         // Check if the bucket already exists but is owned by us (race condition)
         if (createError.name === "BucketAlreadyOwnedByYou") {
           logger.success(
@@ -117,7 +118,7 @@ export class S3BucketManager {
         // Other error creating bucket
         throw createError;
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Failed to ensure bucket ${bucketName} exists: ${error.message}`,
       );
@@ -154,7 +155,7 @@ export class S3BucketManager {
         }),
       );
       logger.info(`Blocked public access on bucket ${bucketName}`);
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Failed to configure bucket ${bucketName}: ${error.message}`,
       );
@@ -189,7 +190,7 @@ export class S3BucketManager {
         listObjectsResult.Contents?.length &&
         listObjectsResult.Contents[0].Key === key
       );
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Error checking if object ${key} exists in bucket ${bucketName}: ${error.message}`,
       );
@@ -219,7 +220,7 @@ export class S3BucketManager {
         Contents?: Array<{ Key: string }>;
       };
       return listObjectsResult.Contents?.length || 0;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Error counting objects with prefix ${prefix} in bucket ${bucketName}: ${error.message}`,
       );

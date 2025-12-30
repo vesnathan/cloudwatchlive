@@ -31,8 +31,7 @@ export const authSignIn = async (input: SignInInput) => {
       input.onInvalidPassword();
     } else {
       {
-        const e = new Error("257.141 signIn error");
-        (e as any).cause = signInError;
+        const e = new Error("257.141 signIn error", { cause: signInError });
         input.onUnhandledError(e);
       }
     }

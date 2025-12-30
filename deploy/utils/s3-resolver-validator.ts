@@ -9,6 +9,20 @@ import {
 } from "@aws-sdk/client-s3";
 import { logger } from "./logger";
 
+interface PolicyStatement {
+  Sid?: string;
+  Effect: string;
+  Principal?: { Service?: string; AWS?: string | string[] } | string;
+  Action: string | string[];
+  Resource: string | string[];
+  Condition?: Record<string, Record<string, string | string[]>>;
+}
+
+interface BucketPolicy {
+  Version: string;
+  Statement: PolicyStatement[];
+}
+
 /**
  * Add a policy to an S3 bucket to allow AppSync access to resolver code
  * @param bucketName S3 bucket name
@@ -28,7 +42,7 @@ export async function addAppSyncBucketPolicy(
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       try {
         return await operation();
-      } catch (error: any) {
+      } catch (error: unknown) {
         lastError = error;
         logger.warning(
           `Operation failed (attempt ${attempt}/${MAX_RETRIES}): ${error.message}`,
@@ -54,7 +68,7 @@ export async function addAppSyncBucketPolicy(
       try {
         await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
         logger.info(`Bucket ${bucketName} exists, checking policy...`);
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(
           `Bucket ${bucketName} does not exist or is not accessible: ${error.message}`,
         );
@@ -80,7 +94,7 @@ export async function addAppSyncBucketPolicy(
             existingPolicy = JSON.parse(policyResponse.Policy);
             logger.info(`Retrieved existing bucket policy for ${bucketName}`);
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           if (error.name !== "NoSuchBucketPolicy") {
             logger.warning(`Error getting bucket policy: ${error.message}`);
             throw error;
@@ -90,7 +104,7 @@ export async function addAppSyncBucketPolicy(
           );
         }
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Could not retrieve bucket policy after multiple attempts: ${error.message}`,
       );
@@ -112,9 +126,9 @@ export async function addAppSyncBucketPolicy(
     let policyUpdated = false;
     if (
       !existingPolicy.Statement.some(
-        (stmt: any) =>
+        (stmt: PolicyStatement) =>
           stmt.Sid === "AllowAppSyncToAccessResolvers" &&
-          stmt.Principal?.Service === "appsync.amazonaws.com",
+          (typeof stmt.Principal === "object" && stmt.Principal?.Service === "appsync.amazonaws.com"),
       )
     ) {
       existingPolicy.Statement.push(appSyncStatement);
@@ -137,7 +151,7 @@ export async function addAppSyncBucketPolicy(
           logger.success(
             `Updated bucket policy for ${bucketName} to allow AppSync access`,
           );
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(`Failed to update bucket policy: ${error.message}`);
           throw error;
         }
@@ -156,14 +170,14 @@ export async function addAppSyncBucketPolicy(
         logger.success(
           `Successfully verified bucket ${bucketName} is accessible after policy update`,
         );
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.warning(
           `Bucket ${bucketName} may have access issues after policy update: ${error.message}`,
         );
         throw error;
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(
       `Failed to configure bucket policy for AppSync access: ${error.message}`,
     );
@@ -192,7 +206,7 @@ export async function verifyResolversAccessible(
     // Check if bucket exists
     try {
       await s3Client.send(new HeadBucketCommand({ Bucket: bucketName }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(
         `Bucket ${bucketName} does not exist or is not accessible: ${error.message}`,
       );
@@ -211,7 +225,7 @@ export async function verifyResolversAccessible(
               Prefix: resolversPrefix,
             }),
           );
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.warning(
             `Error listing objects, retrying... (${error.message})`,
           );
@@ -228,7 +242,7 @@ export async function verifyResolversAccessible(
         try {
           listResponse = await listOperation();
           break;
-        } catch (error: any) {
+        } catch (error: unknown) {
           retryCount++;
           if (retryCount >= maxRetries) {
             throw error;
@@ -271,7 +285,7 @@ export async function verifyResolversAccessible(
                     Key: firstResolver,
                   }),
                 );
-              } catch (error: any) {
+              } catch (error: unknown) {
                 logger.warning(
                   `Error getting resolver object, retrying... (${error.message})`,
                 );
@@ -290,7 +304,7 @@ export async function verifyResolversAccessible(
                 logger.success(
                   `Successfully verified bucket ${bucketName} is readable`,
                 );
-              } catch (error: any) {
+              } catch (error: unknown) {
                 retryCount++;
                 if (retryCount >= maxRetries) {
                   logger.warning(
@@ -312,7 +326,7 @@ export async function verifyResolversAccessible(
               return false;
             }
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.warning(
             `Bucket ${bucketName} may have access issues: ${error.message}`,
           );
@@ -324,11 +338,11 @@ export async function verifyResolversAccessible(
         `Found ${resolverCount} resolver files in bucket ${bucketName}`,
       );
       return resolverCount > 0;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(`Error listing resolver files: ${error.message}`);
       return false;
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     logger.error(`Failed to verify resolver accessibility: ${error.message}`);
     return false;
   }

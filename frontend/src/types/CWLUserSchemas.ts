@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from "uuid";
 import { z } from "zod";
-import { ClientType, CWLUser } from "./gqlTypes";
+import { ClientType, CWLUser } from "@shared/types/gqlTypes";
 
 export const createEmptyCWLUser = (): CWLUser => ({
   __typename: "CWLUser",

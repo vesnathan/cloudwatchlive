@@ -9,6 +9,7 @@ import {
   DeleteObjectsCommand,
   PutObjectCommand,
   _Object,
+  BucketLocationConstraint,
 } from "@aws-sdk/client-s3";
 import { IAM, PutRolePolicyCommand } from "@aws-sdk/client-iam";
 import {
@@ -115,7 +116,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
         await s3.createBucket({
           Bucket: templateBucketName,
           CreateBucketConfiguration: {
-            LocationConstraint: region as any, // Cast to any to satisfy BucketLocationConstraint
+            LocationConstraint: region as BucketLocationConstraint,
           },
         });
       }
@@ -219,7 +220,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
               files.push(fullPath);
             }
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           logger.error(`Error reading directory ${dir}: ${err.message}`);
         }
         return files;
@@ -260,7 +261,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
           }),
         );
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Template upload operation failed: ${error.message}`);
       throw error;
     }
@@ -317,7 +318,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
         logger.debug(`Updating existing stack: ${stackName}`);
         await cfn.updateStack(stackParams);
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.message?.includes("does not exist")) {
         logger.debug(`Creating new stack: ${stackName}`);
         await cfn.createStack(stackParams);
@@ -340,7 +341,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
       stopSpinner();
       throw new Error("Shared Resources deployment failed");
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     stopSpinner();
     logger.error(`Shared Resources deployment failed: ${error.message}`);
     throw error;

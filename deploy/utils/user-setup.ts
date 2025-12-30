@@ -13,6 +13,7 @@ import {
   PutItemCommand,
   GetItemCommand,
   DescribeTableCommand,
+  AttributeValue,
 } from "@aws-sdk/client-dynamodb";
 import {
   CloudFormationClient,
@@ -20,19 +21,19 @@ import {
   ListExportsCommand,
 } from "@aws-sdk/client-cloudformation";
 import { logger } from "./logger";
-import { REGEX } from "../../shared/constants/RegEx"; // Corrected import
-import { CWL_COGNITO_GROUPS } from "../../cloudwatchlive/backend/constants/ClientTypes";
-import { COGNITO_GROUPS as AWSE_COGNITO_GROUPS } from "../../aws-example/backend/constants/ClientTypes";
 import { StackType, getStackName } from "../types";
 import { OutputsManager } from "../outputs-manager";
 import { candidateExportNames } from "../utils/export-names";
 import { getAppNameForStackType } from "../utils/stack-utils";
-import { COGNITO_GROUPS as TSH_COGNITO_GROUPS } from "../../the-story-hub/backend/constants/ClientTypes";
-import { COGNITO_GROUPS as CCT_COGNITO_GROUPS } from "../../card-counting-trainer/backend/constants/ClientTypes";
+import { CWL_COGNITO_GROUPS } from "../../backend/constants/ClientTypes";
 
-// NOTE: Add your stack's short name here when bootstrapping a new package
-// This type is used for Cognito user setup - add the short name (e.g., "tsf" for The Story Forge)
-export type StackTypeForUser = "cwl" | "awse" | "tsh" | "cct";
+// Email regex for validation
+const REGEX = {
+  EMAIL: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+};
+
+// NOTE: This is CloudWatch Live standalone deployment - only supports "cwl"
+export type StackTypeForUser = "cwl";
 
 // STACK_TYPE_CONFIG: Configuration mapping for user setup per stack type
 // When bootstrapping a new package, add an entry here with the stack's configuration
@@ -51,27 +52,6 @@ const STACK_TYPE_CONFIG: Record<StackTypeForUser, StackTypeConfig> = {
     outputKey: "CWLUserPoolId",
     adminGroup: "SuperAdmin",
     usesSimpleSchema: false,
-  },
-  awse: {
-    stackTypeEnum: StackType.AwsExample,
-    cognitoGroups: AWSE_COGNITO_GROUPS,
-    outputKey: "AWSEUserPoolId",
-    adminGroup: "SiteAdmin",
-    usesSimpleSchema: true,
-  },
-  tsh: {
-    stackTypeEnum: StackType.TheStoryHub,
-    cognitoGroups: TSH_COGNITO_GROUPS,
-    outputKey: "UserPoolId",
-    adminGroup: "SiteAdmin",
-    usesSimpleSchema: true,
-  },
-  cct: {
-    stackTypeEnum: StackType.CardCountingTrainer,
-    cognitoGroups: CCT_COGNITO_GROUPS,
-    outputKey: "UserPoolId",
-    adminGroup: "admin",
-    usesSimpleSchema: true,
   },
 };
 
@@ -359,7 +339,7 @@ export class UserSetupManager {
         throw new Error("User exists but 'sub' attribute not found");
       }
       return subAttribute.Value;
-    } catch (error: any) {
+    } catch (error: unknown) {
       if (error.name === "UserNotFoundException") {
         // User doesn't exist, create them
         return await this.createNewCognitoUser(userPoolId, userEmail);
@@ -473,7 +453,7 @@ export class UserSetupManager {
       // Create user in DynamoDb with schema specific to the stack type
       const currentTimestamp = new Date().toISOString();
 
-      let userItem: any;
+      let userItem: Record<string, AttributeValue>;
 
       if (this.getConfig().usesSimpleSchema) {
         // AWSE/TSH schema - simpler, no organization

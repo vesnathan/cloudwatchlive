@@ -23,10 +23,8 @@ async function tableHasItems(): Promise<boolean> {
     const resp = await ddbClient.send(
       new ScanCommand({ TableName: TABLE_NAME, Limit: 1 }),
     );
-    // Some SDK responses use Count, some include Items array
-    const count =
-      (resp as any).Count ??
-      ((resp as any).Items ? (resp as any).Items.length : 0);
+    // ScanCommandOutput has Count and Items properties
+    const count = resp.Count ?? (resp.Items ? resp.Items.length : 0);
     return (count || 0) > 0;
   } catch (err) {
     console.warn(
@@ -900,11 +898,19 @@ function createOrganization(
   };
 }
 
+interface SeedUserData {
+  email: string;
+  title: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
 // Create a CWL user object
 function createCWLUser(
   superAdminUserId: string,
   organizationId: string,
-  userData: any,
+  userData: SeedUserData,
   userType: "EventCompanyMainAdmin" | "EventCompanyAdmin" | "EventCompanyStaff",
   managedAdminIds?: string[],
   managedStaffIds?: string[],

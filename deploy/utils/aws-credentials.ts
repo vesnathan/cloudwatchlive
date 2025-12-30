@@ -39,7 +39,7 @@ export async function configureAwsCredentials(): Promise<void> {
       await stsClient.send(new GetCallerIdentityCommand({}));
       logger.success("Existing AWS credentials validated successfully");
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.warning(
         `Existing credentials failed validation: ${error.message}`,
       );
@@ -107,7 +107,7 @@ AWS_ACCOUNT_ID=${answers.accountId}`;
       const stsClient = new STSClient({ region: "us-east-1" });
       await stsClient.send(new GetCallerIdentityCommand({}));
       logger.success("AWS credentials configured and validated successfully");
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Failed to validate AWS credentials: ${error.message}`);
       throw error;
     }

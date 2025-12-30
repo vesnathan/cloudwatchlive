@@ -23,9 +23,7 @@ export const authResetPassword = async (input: ResetPasswordInput) => {
       input.onUserNotFound();
     } else {
       {
-        const e = new Error("204.147 resetPassword error");
-        // Assign cause in environments that support it; satisfy TS by using a cast
-        (e as any).cause = resetPasswordError;
+        const e = new Error("204.147 resetPassword error", { cause: resetPasswordError });
         input.onUnhandledError(e);
       }
     }
@@ -46,8 +44,8 @@ export const authResetPassword = async (input: ResetPasswordInput) => {
       {
         const e = new Error(
           `204.148 unhandled resetPassword nextStep: ${nextStep}`,
+          { cause: resetPasswordError },
         );
-        (e as any).cause = resetPasswordError;
         input.onUnhandledError(e);
       }
       break;

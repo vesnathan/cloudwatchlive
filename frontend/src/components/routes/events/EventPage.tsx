@@ -5,7 +5,7 @@ import { EventBase, Session, Speaker } from "@/types/EventTypes";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@nextui-org/react";
-import type { CWLUser } from "@/types/gqlTypes";
+import type { CWLUser } from "@shared/types/gqlTypes";
 
 // Use canonical dev-mocks JSON directly for frontend testing
 // eslint-disable-next-line import/no-extraneous-dependencies

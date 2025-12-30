@@ -8,10 +8,8 @@ import { useQuery } from "@tanstack/react-query";
 import { DataFetchError } from "@/components/common/DataFetchError";
 import { useRouter } from "next/navigation";
 import { FC, PropsWithChildren, useEffect } from "react";
-import {
-  getCWLUserQueryFn,
-  getCWLUserQueryKey,
-} from "../graphql/queries/userQueries";
+import { getCWLUserQueryKey } from "../graphql/queries/userQueries";
+import { getCWLUserAPI } from "@/lib/api/user";
 
 const ProgressAny = Progress as unknown as React.ComponentType<ProgressProps>;
 
@@ -25,14 +23,11 @@ export const CWLUserStoreSetup: FC<Props> = ({ userId, children }) => {
 
   const queryKey = getCWLUserQueryKey(userId);
 
-  const { data, error, isPending } = useQuery({
+  const { data: CWLUser, error, isPending } = useQuery({
     retry: false,
-    queryFn: () => getCWLUserQueryFn({ userId }),
+    queryFn: () => getCWLUserAPI({ userId }),
     queryKey,
   });
-
-  // Extract the user data
-  const CWLUser = data?.data?.getCWLUser;
 
   // Set user in store when GraphQL data is available
   // The resolver already handles Cognito group to clientType mapping

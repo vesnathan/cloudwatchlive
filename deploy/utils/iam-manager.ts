@@ -24,7 +24,7 @@ export class IamManager {
       this.currentUserArn = response.User.Arn;
       logger.debug(`Current user ARN: ${this.currentUserArn}`);
       return this.currentUserArn;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Failed to get current user: ${error?.message}`);
       throw error;
     }
@@ -50,7 +50,7 @@ export class IamManager {
           throw new Error(`Role ${roleName} exists but has no ARN`);
         }
         return role.Role.Arn;
-      } catch (roleError: any) {
+      } catch (roleError: unknown) {
         // Both NoSuchEntity and "role cannot be found" indicate the role doesn't exist
         if (
           !roleError.name?.includes("NoSuchEntity") &&
@@ -141,7 +141,7 @@ export class IamManager {
             PolicyDocument: JSON.stringify(s3PolicyDocument),
           });
           logger.info(`Attached S3 read inline policy to role ${roleName}`);
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(
             `Error attaching S3 read inline policy to role: ${error.message}`,
           );
@@ -156,7 +156,7 @@ export class IamManager {
       await new Promise((resolve) => setTimeout(resolve, 10000));
 
       return createRoleResponse.Role.Arn;
-    } catch (error: any) {
+    } catch (error: unknown) {
       logger.error(`Failed to setup role ${roleName}: ${error?.message}`);
       throw error;
     }

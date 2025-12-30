@@ -1,5 +1,5 @@
 import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
-import { DynamoDBDocumentClient, ScanCommand } from "@aws-sdk/lib-dynamodb";
+import { DynamoDBDocumentClient, ScanCommand, ScanCommandInput, ScanCommandOutput } from "@aws-sdk/lib-dynamodb";
 
 const REGION = process.env.AWS_REGION || "ap-southeast-2";
 const TABLE_NAME = process.env.TABLE_NAME || "nlmonorepo-cwl-datatable-dev";
@@ -7,15 +7,25 @@ const TABLE_NAME = process.env.TABLE_NAME || "nlmonorepo-cwl-datatable-dev";
 const ddbClient = new DynamoDBClient({ region: REGION });
 const docClient = DynamoDBDocumentClient.from(ddbClient);
 
+interface OrganizationItem {
+  organizationId: string;
+  organizationName: string;
+  organizationType: string;
+  organizationCreated: string;
+  mainAdminUserId: string;
+  adminUserIds?: string[];
+  staffUserIds?: string[];
+}
+
 export const handler = async () => {
   try {
     // Scan for organization metadata items.
     // Organization metadata items use SK = `METADATA#<orgId>` and PK = `ORG#<orgId>`.
     // We paginate the scan to collect all matching items.
-    const orgs: any[] = [];
-    let ExclusiveStartKey: any = undefined;
+    const orgs: OrganizationItem[] = [];
+    let ExclusiveStartKey: Record<string, unknown> | undefined = undefined;
     do {
-      const params: any = {
+      const params: ScanCommandInput = {
         TableName: TABLE_NAME,
         // Only return items that look like org metadata
         FilterExpression: "begins_with(SK, :metaPrefix)",
@@ -27,11 +37,11 @@ export const handler = async () => {
         ExclusiveStartKey,
       };
 
-      const res = await docClient.send(new ScanCommand(params));
+      const res: ScanCommandOutput = await docClient.send(new ScanCommand(params));
       if (res.Items && res.Items.length) {
-        orgs.push(...res.Items);
+        orgs.push(...(res.Items as OrganizationItem[]));
       }
-      ExclusiveStartKey = (res as any).LastEvaluatedKey;
+      ExclusiveStartKey = res.LastEvaluatedKey;
     } while (ExclusiveStartKey);
 
     return (

@@ -4,9 +4,11 @@
     "module": "commonjs",
     "baseUrl": ".",
     "paths": {
-      "gqlTypes": ["../frontend/src/types/gqlTypes.ts"]
+      "@shared": ["../shared/src/index.ts"],
+      "@shared/*": ["../shared/src/*"],
+      "gqlTypes": ["../shared/src/types/gqlTypes.ts"]
     }
   },
-  "include": ["constants", "resolvers"],
+  "include": ["constants", "resolvers", "../shared/src"],
   "exclude": ["node_modules"]
 }
