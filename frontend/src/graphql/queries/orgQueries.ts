@@ -1,22 +1,19 @@
-import { GraphQLResult, generateClient } from "aws-amplify/api";
+/**
+ * Organization GraphQL Queries
+ * Contains ONLY query strings and query keys.
+ * API functions are in /lib/api/organization.ts
+ */
 
-export type Organization = {
-  organizationId: string;
-  organizationName: string;
-  organizationType: string;
-  organizationCreated: string;
-  mainAdminUserId: string;
-  adminUserIds: string[];
-  staffUserIds: string[];
-};
-
-const amplifyGraphqlClient = generateClient();
-
+// Query Keys for React Query
 export const orgQueryKeys = {
   listOrganizations: "listOrganizations",
 };
 
-const listOrganizationsQueryStr = `
+// Query key factory
+export const listOrganizationsQueryKey = () => [orgQueryKeys.listOrganizations];
+
+// GraphQL Query String
+export const LIST_ORGANIZATIONS_QUERY = /* GraphQL */ `
   query ListOrganizations {
     listOrganizations {
       organizationId
@@ -29,12 +26,3 @@ const listOrganizationsQueryStr = `
     }
   }
 `;
-
-export const listOrganizationsQueryKey = () => [orgQueryKeys.listOrganizations];
-
-export const listOrganizationsQueryFn = () => {
-  return amplifyGraphqlClient.graphql({
-    query: listOrganizationsQueryStr,
-    authMode: "userPool",
-  }) as Promise<GraphQLResult<{ listOrganizations: Organization[] }>>;
-};

@@ -1,6 +1,6 @@
 "use client";
 
-import { listOrganizationsQueryFn } from "@/graphql/queries/orgQueries";
+import { listOrganizationsAPI } from "@/lib/api/organization";
 
 import React, {
   forwardRef,
@@ -18,7 +18,7 @@ import {
   createEmptyCWLUser,
   CWLUserFormValidationSchema,
 } from "@/types/CWLUserSchemas";
-import { CWLUser } from "@/types/gqlTypes";
+import { CWLUser } from "@shared/types/gqlTypes";
 import { useUserStore } from "@/stores/userStore";
 import { useGetUserJobRoles } from "@/hooks/useGetUserJobRoles";
 
@@ -38,11 +38,7 @@ export const AddUserForm = forwardRef(
     });
 
     useEffect(() => {
-      listOrganizationsQueryFn().then((result) => {
-        const orgs = (result.data?.listOrganizations || []) as Array<{
-          organizationId: string;
-          organizationName: string;
-        }>;
+      listOrganizationsAPI().then((orgs) => {
         setOrgOptions(
           orgs.map((org) => ({
             id: org.organizationId,

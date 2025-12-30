@@ -1,9 +1,6 @@
-import { CWLUser } from "@/types/gqlTypes";
-
-type MutationInput = Omit<
-  CWLUser,
-  "__typename" | "userId" | "privacyPolicy" | "termsAndConditions"
->;
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { CWLUserInput } from "@shared/types/gqlTypes";
+import { createCWLUserAPI } from "@/lib/api/user";
 
 export const useSaveSuperAdminClientMutation = (options?: {
   onSuccess?: () => void;
@@ -11,23 +8,19 @@ export const useSaveSuperAdminClientMutation = (options?: {
   invalidate?: boolean;
   additionalInvalidationKeys?: string[];
 }) => {
-  // TODO: Re-implement when mutation functions are available
-  // For now, return a stub to avoid build errors
-  return {
-    mutate: (input: MutationInput) => {
-      // Only log in development mode
-      // eslint-disable-next-line no-console
-      if (process.env.NODE_ENV === "development") {
-        // eslint-disable-next-line no-console
-        console.log("useSaveSuperAdminClientMutation called with:", input);
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (input: CWLUserInput) => createCWLUserAPI(input),
+    onSuccess: () => {
+      if (options?.invalidate !== false) {
+        queryClient.invalidateQueries({ queryKey: ["getCWLUser"] });
+        queryClient.invalidateQueries({ queryKey: ["listOrganizations"] });
+        options?.additionalInvalidationKeys?.forEach((key) => {
+          queryClient.invalidateQueries({ queryKey: [key] });
+        });
       }
-      // Simulate success callback if provided
-      if (options?.onSuccess) {
-        setTimeout(options.onSuccess, 100);
-      }
+      options?.onSuccess?.();
     },
-    isPending: false,
-    isSuccess: false,
-    error: null,
-  };
+  });
 };

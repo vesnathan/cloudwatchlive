@@ -9,6 +9,7 @@ import {
   DeleteObjectsCommand,
   PutObjectCommand,
   _Object,
+  BucketLocationConstraint,
 } from "@aws-sdk/client-s3";
 import { IAM, PutRolePolicyCommand } from "@aws-sdk/client-iam";
 import {
@@ -115,7 +116,7 @@ export async function deployShared(options: DeploymentOptions): Promise<void> {
         await s3.createBucket({
           Bucket: templateBucketName,
           CreateBucketConfiguration: {
-            LocationConstraint: region as any, // Cast to any to satisfy BucketLocationConstraint
+            LocationConstraint: region as BucketLocationConstraint,
           },
         });
       }

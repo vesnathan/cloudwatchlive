@@ -11,13 +11,30 @@ type CreateCWLUserMutationVariables = {
 // Define Output type for the resolver - it's CWLUser as per schema
 type Output = CWLUser;
 
+// Define the DynamoDB result structure (matches what we put in the request)
+interface DynamoDBUserResult {
+  userId: string;
+  organizationId: string;
+  userEmail: string;
+  userTitle?: string;
+  userFirstName: string;
+  userLastName: string;
+  userPhone?: string;
+  userRole: string;
+  privacyPolicy?: boolean;
+  termsAndConditions?: boolean;
+  userAddedById?: string;
+  userCreated: string;
+  userProfilePicture?: { Bucket: string; Key: string };
+}
+
 // Define CTX for the response function context
 type CTX = Context<
   CreateCWLUserMutationVariables,
   object,
   object,
   object,
-  Output
+  DynamoDBUserResult
 >;
 
 export function request(ctx: Context<CreateCWLUserMutationVariables>) {
@@ -92,13 +109,8 @@ export function response(ctx: CTX): Output {
   }
   console.log("User creation successful, result:", JSON.stringify(ctx.result));
   // The result of PutItem is the item itself if successful and no error occurred.
-  // However, AppSync typically returns the `attributeValues` passed in the request for PutItem.
-  // We need to construct the CWLUser object that matches the GraphQL schema.
-
-  // The ctx.result from a PutItem operation is usually the item that was put.
-  // If you used `returnValues: 'ALL_OLD'` or similar, it might be different.
-  // Assuming ctx.result directly contains the newly created user's attributes.
-  const createdUser = ctx.result as any;
+  // ctx.result is typed as DynamoDBUserResult from the CTX type parameter.
+  const createdUser = ctx.result;
 
   // The clientType will be dynamically added by the Query.getCWLUser resolver
   // when the user data is fetched. For the mutation response, we can return an empty array
